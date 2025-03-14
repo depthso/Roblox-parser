@@ -47,7 +47,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): string
 	
 	--// Empty table
 	if ItemsCount == 0 then
-		return "{}"
+		return NoBrackets and "" or "{}"
 	end
 	
 	local IndentString = string.rep("	", Indent)
@@ -113,13 +113,15 @@ function Module:MakeVariableCode(Order: table): string
 	local ClassedVariables = Variables.VariablesDict
 	
 	local Code = ""
-
-	for Index, Class in next, Order do
+	
+	local Index = 0
+	for _, Class in next, Order do
 		local Variables = ClassedVariables[Class]
 		if not Variables then continue end
 		
+		Index += 1
+		
 		local NewLine = Index > 1 and "\n" or ""
-
 		Code ..= `{NewLine}-- {Class}\n`
 		Code ..= self:MakeVariableCodeLines(Variables)
 	end
