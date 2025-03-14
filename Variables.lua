@@ -62,6 +62,10 @@ function Module.new(Values): Module
 	return setmetatable(Class, Module)
 end
 
+function Module:GetVariableCount(): number
+	return self.VariableCount
+end
+
 function Module:IsGlobal(Value): boolean
 	local IndexFunc = self.IndexFunc
 	

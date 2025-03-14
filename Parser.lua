@@ -20,7 +20,8 @@ function Module.new(Values): Module
 end
 
 function Module:FormatTableKey(Index): string?
-	local NeedsBrackets = self:NeedsBrackets(Index)
+	local Formatter = self.Formatter
+	local NeedsBrackets = Formatter:NeedsBrackets(Index)
 	
 	if NeedsBrackets then return end
 	if typeof(Index) ~= "string" then return end
@@ -126,12 +127,18 @@ function Module:MakeVariableCode(Order: table): string
 	return Code
 end
 
+type MakePathStringData = {
+	Object: Instance,
+	Parents: table?,
+	NoVariables: boolean?
+}
 function Module:MakePathString(Data: table): (string, number)
 	local Variables = self.Variables
 	local Formatter = self.Formatter
 
 	local Base = Data.Object
 	local Parents = Data.Parents
+	local NoVariables = Data.NoVariables
 
 	local PathString = ""
 
@@ -142,6 +149,12 @@ function Module:MakePathString(Data: table): (string, number)
 		if not Variables:IsService(String) then return end
 
 		local ServiceString = `game:GetService("{String}")`
+		
+		--// NoVariables flag
+		if NoVariables then
+			PathString = ServiceString
+			return true
+		end
 
 		--// Make service into a variable
 		local Name = Variables:MakeVariable({
@@ -160,7 +173,7 @@ function Module:MakePathString(Data: table): (string, number)
 
 		--// Check for an existing variable
 		local Variable = Variables:GetVariable(Object)
-		if Variable then -- Object ~= Base
+		if Variable and not NoVariables then
 			String = Variable.Name
 		end
 
