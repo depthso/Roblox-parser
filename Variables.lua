@@ -68,7 +68,7 @@ end
 
 function Module:IsGlobal(Value): boolean
 	local IndexFunc = self.IndexFunc
-	
+
 	--// Check based on instance name
 	if typeof(Value) == "Instance" then
 		local Name = IndexFunc(Value, "Name")
@@ -81,11 +81,13 @@ end
 function Module:IsService(Object: Instance): boolean
 	local IndexFunc = self.IndexFunc
 	local ClassName = IndexFunc(Object, "ClassName")
-	
+
 	--// Check if object is a service based on the ClassName
-	return pcall(function()
-		return game:FindService(ClassName)
+	local Success = pcall(function()
+		return game:GetService(ClassName)
 	end)
+	
+	return Success and ClassName or nil
 end
 
 
@@ -95,12 +97,12 @@ function Module:MakeName(Data): string
 	if Name then 
 		return Name 
 	end
-	
+
 	self.VariableCount += 1
-	
+
 	local VariableCount = self.VariableCount
 	local Base = self.VariableBase
-	
+
 	return Base:format(VariableCount)
 end
 
@@ -113,57 +115,57 @@ function Module:MakeVariable(Data: VariableData): string
 	local Variables = self.VariablesDict
 	local VariableLookup = self.VariableLookup
 	local InstanceQueue = self.InstanceQueue
-	
+
 	local Value = Data.Value
 	local Lookup = Data.Lookup or Value
 	local Class = Data.Class or "Variables"
-	
+
 	--// Return existing variable
 	local Existing = self:GetVariable(Lookup)
 	if Existing then
 		return Existing.Name
 	end
-	
+
 	--// Check if the value is a global
 	local Global = self:IsGlobal(Value)
 	if Global then
 		return Global
 	end
-	
+
 	--// Check if value is an instance
 	if not Data.Name and typeof(Value) == "Instance" then
 		InstanceQueue[Value] = Data
 	end
-	
+
 	--// Generate variable name
 	local Name = self:MakeName(Data)
 	Data.Name = Name
-	
+
 	local ClassDict = Variables[Class]
 	if not ClassDict then
 		ClassDict = {}
 		Variables[Class] = ClassDict
 	end
-	
+
 	ClassDict[Lookup] = Data
 	VariableLookup[Lookup] = Data
-	
+
 	return Name
 end
 
 function Module:CollectTableItems(Table, Callback: (Value: any)->nil)
 	local function Process(Value)
 		local Type = typeof(Value)
-		
+
 		--// Recursive search
 		if Type == "table" then
 			self:CollectTableItems(Value, Callback)
 			return
 		end
-		
+
 		Callback(Value)
 	end
-	
+
 	--// Process each item in table
 	for A, B in next, Table do
 		Process(A)
@@ -177,7 +179,7 @@ function Module:FindDuplicates(Table: table): table
 
 	for Index, Value in next, Table do
 		local State = IndexStates[Value]
-		
+
 		--// Check if the value has already been indexed
 		if State == 1 then
 			table.insert(Duplicates, Value)
@@ -187,7 +189,7 @@ function Module:FindDuplicates(Table: table): table
 
 		IndexStates[Value] = 1
 	end
-	
+
 	--// Clear index states in memory
 	table.clear(IndexStates)
 
@@ -196,25 +198,25 @@ end
 
 function Module:CollectTableTypes(Table: table, Types: table): table
 	local Collections = {}
-	
+
 	local function Process(Value)
 		local Type = typeof(Value)
-		
+
 		--// Check if type should be collected
 		if not table.find(Types, Type) then return end
-		
+
 		local Collected = Collections[Type]
 		if not Collected then
 			Collected = {}
 			Collections[Type] = Collected
 		end
-		
+
 		table.insert(Collected, Value)
 	end
-	
+
 	--// Collect all table items
 	self:CollectTableItems(Table, Process)
-	
+
 	return Collections
 end
 
@@ -222,7 +224,7 @@ function Module:MakeParentsTable(Object): table
 	local IndexFunc = self.IndexFunc
 	local Swaps = self.Swaps
 	local Variables = self.Variables
-	
+
 	local Parents = {}
 	local NextParent = Object
 
@@ -267,18 +269,18 @@ function Module:BulkCollectParents(Table): (table, table)
 		if typeof(Object) ~= "Instance" then continue end
 
 		local Parents = self:MakeParentsTable(Object)
-		
+
 		MultiInsert(AllParents, Parents)
 
 		ObjectParents[Object] = Parents
 	end
-	
+
 	return AllParents, ObjectParents
 end
 
 function Module:PrerenderVariables(Table: table, Types: table)	
 	local Collections = self:CollectTableTypes(Table, Types)
-	
+
 	--// Instances
 	for Type, Items in next, Collections do
 		local Render = RenderFuncs[Type]

@@ -73,7 +73,7 @@ end
 function Module:Format(Value, Extra)
 	local Formats = self.Formats
 	local Variables = self.Variables
-	
+
 	Extra = Extra or {}
 
 	local Type = typeof(Value)
@@ -82,7 +82,7 @@ function Module:Format(Value, Extra)
 	--// Invoke compile function
 	if typeof(Format) == "function" then
 		local Formatted, IsVariable = Format(self, Value, Extra)
-		
+
 		--// Make variable
 		if IsVariable and not Extra.NoVariableCreate then
 			Formatted = Variables:MakeVariable({
@@ -90,7 +90,7 @@ function Module:Format(Value, Extra)
 				Value = Formatted
 			})
 		end
-		
+
 		return Formatted
 	end
 
@@ -107,7 +107,7 @@ function Module:ObjectToString(Object): string
 	local Swaps = self.Swaps
 	local IndexFunc = self.IndexFunc
 	local Replacements = self.ClassNameStrings
-	
+
 	local Name = IndexFunc(Object, "Name")
 	local ClassName = IndexFunc(Object, "ClassName")
 

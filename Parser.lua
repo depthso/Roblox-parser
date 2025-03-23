@@ -22,10 +22,10 @@ end
 function Module:FormatTableKey(Index): string?
 	local Formatter = self.Formatter
 	local NeedsBrackets = Formatter:NeedsBrackets(Index)
-	
+
 	if NeedsBrackets then return end
 	if typeof(Index) ~= "string" then return end
-	
+
 	return `{Index} = `
 end
 
@@ -36,30 +36,30 @@ type ParseTableIntoStringData = {
 }
 function Module:ParseTableIntoString(Data: ParseTableIntoStringData): string
 	local Formatter = self.Formatter
-	
+
 	--// Unpack configuration
 	local Indent = Data.Indent or 0
 	local NoBrackets = Data.NoBrackets
 	local Table = Data.Table
-	
+
 	local IsArray = Table[1]
 	local ItemsCount = IsArray and #Table or GetDictSize(Table) --TODO ReGui:GetDictSize
-	
+
 	--// Empty table
 	if ItemsCount == 0 then
 		return NoBrackets and "" or "{}"
 	end
-	
+
 	local IndentString = string.rep("	", Indent)
 	local TableString = `{not NoBrackets and "{" or ""}\n`
-	
+
 	--// Generate string
 	local Position = 0
 	for Index, Value in next, Table do
 		local Ending = ""
 		local KeyString = ""
 		local ValueString = Formatter:Format(Value, Data)
-		
+
 		--// Format the index value
 		if typeof(Index) ~= "number" then
 			KeyString = self:FormatTableKey(Index)
@@ -74,13 +74,13 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): string
 		if Position < ItemsCount then
 			Ending = ","
 		end
-		
+
 		TableString ..= `{IndentString}	{KeyString}{ValueString}{Ending}\n`
 	end
 
 	--// Close the table
 	TableString ..= `{IndentString}{not NoBrackets and "}" or ""}`
-	
+
 	return TableString
 end
 
@@ -111,16 +111,16 @@ end
 function Module:MakeVariableCode(Order: table): string
 	local Variables = self.Variables
 	local ClassedVariables = Variables.VariablesDict
-	
+
 	local Code = ""
-	
+
 	local Index = 0
 	for _, Class in next, Order do
 		local Variables = ClassedVariables[Class]
 		if not Variables then continue end
-		
+
 		Index += 1
-		
+
 		local NewLine = Index > 1 and "\n" or ""
 		Code ..= `{NewLine}-- {Class}\n`
 		Code ..= self:MakeVariableCodeLines(Variables)
@@ -148,10 +148,13 @@ function Module:MakePathString(Data: table): (string, number)
 	Parents = Parents or Variables:MakeParentsTable(Base)
 
 	local function ServiceCheck(Object: Instance, String: string)
-		if not Variables:IsService(Object) then return end
-
-		local ServiceString = `game:GetService("{String}")`
+		local ServiceName = Variables:IsService(Object)
+		if not ServiceName then return end
 		
+		print(ServiceName)
+
+		local ServiceString = `game:GetService("{ServiceName}")`
+
 		--// NoVariables flag
 		if NoVariables then
 			PathString = ServiceString
@@ -160,7 +163,7 @@ function Module:MakePathString(Data: table): (string, number)
 
 		--// Make service into a variable
 		local Name = Variables:MakeVariable({
-			Name = String,
+			Name = ServiceName,
 			Class = "Services",
 			Value = ServiceString
 		})
