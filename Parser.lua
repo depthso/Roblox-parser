@@ -148,7 +148,7 @@ function Module:MakePathString(Data: table): (string, number)
 	Parents = Parents or Variables:MakeParentsTable(Base)
 
 	local function ServiceCheck(Object: Instance, String: string)
-		if not Variables:IsService(String) then return end
+		if not Variables:IsService(Object) then return end
 
 		local ServiceString = `game:GetService("{String}")`
 		
