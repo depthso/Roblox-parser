@@ -78,11 +78,16 @@ function Module:IsGlobal(Value): boolean
 	return Globals[Value] and Value
 end
 
-function Module:IsService(Name: string): boolean
+function Module:IsService(Object: Instance): boolean
+	local IndexFunc = self.IndexFunc
+	local ClassName = IndexFunc(Object, "ClassName")
+	
+	--// Check if object is a service based on the ClassName
 	return pcall(function()
-		return game:FindService(Name)
+		return game:FindService(ClassName)
 	end)
 end
+
 
 function Module:MakeName(Data): string
 	--// Check if the variable already has defined name

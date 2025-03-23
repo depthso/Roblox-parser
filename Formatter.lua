@@ -8,25 +8,25 @@ Module.ClassNameStrings = {
 
 --// Format type functions
 Module.Formats = {
-	["CFrame"] = function(Value)
+	["CFrame"] = function(self, Value)
 		return `CFrame.new({Value.X},{Value.Y},{Value.Z})`
 	end,
-	["Vector3"] = function(Value)
+	["Vector3"] = function(self, Value)
 		return `Vector3.new({Value.X},{Value.Y},{Value.Z})`
 	end,
-	["Color3"] = function(Value)
+	["Color3"] = function(self, Value)
 		return `Color3.fromRGB({Value.R*255},{Value.G*255},{Value.B*255})`
 	end,
-	["UDim2"] = function(Value)
+	["UDim2"] = function(self, Value)
 		return `UDim2.new({Value.X.Scale},{Value.X.Offset},{Value.Y.Scale},{Value.Y.Offset})`
 	end,
-	["UDim"] = function(Value)
+	["UDim"] = function(self, Value)
 		return `UDim2.new({Value.Scale},{Value.Offset})`
 	end,
-	["Enum"] = function(Value)
+	["Enum"] = function(self, Value)
 		return `UDim2.new({Value.Scale},{Value.Offset})`
 	end,
-	["BrickColor"] = function(Value)
+	["BrickColor"] = function(self, Value)
 		return `BrickColor.new("{Value.Name}")`
 	end,
 	["string"] = `"%*"`,
