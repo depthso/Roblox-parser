@@ -31,8 +31,6 @@ local RenderFuncs = {
 				Object = Object
 			})
 			
-			print(Object, ParentsCount)
-			
 			--// Check the parent count to prevent single paths
 			if ParentsCount < 3 then continue end
 
@@ -277,10 +275,6 @@ function Module:BulkCollectParents(Table): (table, table)
 		MultiInsert(AllParents, Parents)
 		ObjectParents[Object] = Parents
 	end
-	
-	ObjectParents[workspace] = {
-		workspace.Baseplate
-	}
 	
 	return AllParents, ObjectParents
 end
