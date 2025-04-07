@@ -34,7 +34,7 @@ type ParseTableIntoStringData = {
 	Indent: number?,
 	NoBrackets: boolean?
 }
-function Module:ParseTableIntoString(Data: ParseTableIntoStringData): string
+function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, number)
 	local Formatter = self.Formatter
 
 	--// Unpack configuration
@@ -43,11 +43,11 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): string
 	local Table = Data.Table
 
 	local IsArray = Table[1]
-	local ItemsCount = IsArray and #Table or GetDictSize(Table) --TODO ReGui:GetDictSize
+	local ItemsCount = IsArray and #Table or GetDictSize(Table)
 
 	--// Empty table
 	if ItemsCount == 0 then
-		return NoBrackets and "" or "{}"
+		return NoBrackets and "" or "{}", ItemsCount
 	end
 
 	local IndentString = string.rep("	", Indent)
@@ -81,7 +81,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): string
 	--// Close the table
 	TableString ..= `{IndentString}{not NoBrackets and "}" or ""}`
 
-	return TableString
+	return TableString, ItemsCount
 end
 
 function Module:MakeVariableCodeLine(Data: table): string
@@ -150,7 +150,7 @@ function Module:MakePathString(Data: table): (string, number)
 	local function ServiceCheck(Object: Instance, String: string)
 		local ServiceName = Variables:IsService(Object)
 		if not ServiceName then return end
-		
+
 		print(ServiceName)
 
 		local ServiceString = `game:GetService("{ServiceName}")`
