@@ -52,11 +52,12 @@ Module.Formats = {
 	end,
 	["table"] = function(self, Value, Data)
 		local Indent = Data.Indent or 0
-		return self.Parser:ParseTableIntoString({
+		local Parsed = self.Parser:ParseTableIntoString({
 			NoBrackets = false,
 			Indent = Indent + 1,
 			Table = Value
 		})
+		return Parsed
 	end,
 }
 

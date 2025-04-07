@@ -143,6 +143,7 @@ function Module:MakePathString(Data: table): (string, number)
 	local NoVariables = Data.NoVariables
 
 	local PathString = ""
+	local ParentsCount = 0
 
 	--// Get object parents
 	Parents = Parents or Variables:MakeParentsTable(Base)
@@ -150,8 +151,6 @@ function Module:MakePathString(Data: table): (string, number)
 	local function ServiceCheck(Object: Instance, String: string)
 		local ServiceName = Variables:IsService(Object)
 		if not ServiceName then return end
-
-		print(ServiceName)
 
 		local ServiceString = `game:GetService("{ServiceName}")`
 
@@ -189,7 +188,8 @@ function Module:MakePathString(Data: table): (string, number)
 
 		local Brackets = Formatter:NeedsBrackets(String)
 		local Separator = Index > 1 and "." or ""
-
+		
+		ParentsCount += 1
 		PathString ..= Brackets and `["{String}"]` or `{Separator}{String}`
 	end
 
@@ -199,7 +199,7 @@ function Module:MakePathString(Data: table): (string, number)
 	-- 	Args = {PathString, #Parents}
 	-- }
 
-	return PathString, #Parents
+	return PathString, ParentsCount
 end
 
 return Module

@@ -4,6 +4,10 @@ type VariableData = {
 	Comment: string?
 }
 
+type table = {
+	[any]: any
+}
+
 type Module = {
 	VariablesDict: table,
 	VariableLookup: table,
@@ -22,14 +26,15 @@ local RenderFuncs = {
 		local Duplicates = self:FindDuplicates(AllParents)
 
 		--// Make duplicates into variables
-		for _, Object: Instance in Duplicates do
-			local Parents = ObjectParents[Object]
-			if not Parents then continue end
-
-			local Path = Parser:MakePathString({
-				Object = Object,
-				Parents = Parents
+		for _, Object: Instance in next, Duplicates do
+			local Path, ParentsCount = Parser:MakePathString({
+				Object = Object
 			})
+			
+			print(Object, ParentsCount)
+			
+			--// Check the parent count to prevent single paths
+			if ParentsCount < 3 then continue end
 
 			--// Make variable
 			self:MakeVariable({
@@ -86,7 +91,7 @@ function Module:IsService(Object: Instance): boolean
 	local Success = pcall(function()
 		return game:GetService(ClassName)
 	end)
-	
+
 	return Success and ClassName or nil
 end
 
@@ -269,12 +274,14 @@ function Module:BulkCollectParents(Table): (table, table)
 		if typeof(Object) ~= "Instance" then continue end
 
 		local Parents = self:MakeParentsTable(Object)
-
 		MultiInsert(AllParents, Parents)
-
 		ObjectParents[Object] = Parents
 	end
-
+	
+	ObjectParents[workspace] = {
+		workspace.Baseplate
+	}
+	
 	return AllParents, ObjectParents
 end
 
