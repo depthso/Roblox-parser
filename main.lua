@@ -7,7 +7,7 @@
 
 local Module = {
 	--// Package data
-	Version = "1.0.4",
+	Version = "1.0.5",
 	Author = "Depso",
 	License = "GNU-GPLv3",
 	Repository = "https://github.com/depthso/Roblox-parser",

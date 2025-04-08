@@ -66,6 +66,19 @@ function Module:NeedsBrackets(String: string)
 	return not String:match("^[%a_][%w_]*$")
 end
 
+function Module:MakeName(Value): string?
+	local Name = self:ObjectToString(Value)
+	Name = Name:gsub(" ", "")
+	
+	--// Check if the name can be used for a variable
+	if self:NeedsBrackets(Name) then return end
+	
+	--// Prevent long and short variable names
+	if #Name < 3 or #Name > 15 then return end
+	
+	return Name
+end
+
 function Module.new(Values: table): Module
 	local Class = {}
 	return setmetatable(Class, Module)
@@ -79,6 +92,11 @@ function Module:Format(Value, Extra)
 
 	local Type = typeof(Value)
 	local Format = Formats[Type]
+	local Name = nil
+	
+	if typeof(Value) == "Instance" then
+		Name = self:MakeName(Value)
+	end
 
 	--// Invoke compile function
 	if typeof(Format) == "function" then
@@ -87,6 +105,7 @@ function Module:Format(Value, Extra)
 		--// Make variable
 		if IsVariable and not Extra.NoVariableCreate then
 			Formatted = Variables:MakeVariable({
+				Name = Name,
 				Lookup = Value,
 				Value = Formatted
 			})
@@ -98,7 +117,7 @@ function Module:Format(Value, Extra)
 	--// Check if the data-type is supported
 	if not Format then
 		warn("No format for type", Type)
-		return Value
+		return `{Value} --[[Format not supported]]`
 	end
 
 	return Format:format(Value)

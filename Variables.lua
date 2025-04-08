@@ -1,6 +1,7 @@
 type VariableData = {
 	Name: string?,
 	Value: any,
+	Order: number,
 	Comment: string?
 }
 
@@ -8,11 +9,20 @@ type table = {
 	[any]: any
 }
 
+type VariablesDict = {
+	[string]: VariableData
+}
+
+export type ClassDict = {
+	VariableCount: number,
+	Variables: VariablesDict
+}
+
 type Module = {
 	VariablesDict: table,
 	VariableLookup: table,
 	InstanceQueue: table,
-	VariableCount: number
+	NoNameCount: number
 }
 
 local Globals = getfenv(1)
@@ -21,6 +31,7 @@ local Globals = getfenv(1)
 local RenderFuncs = {
 	["Instance"] = function(self, Items: table)
 		local Parser = self.Parser
+		local Formatter = self.Formatter
 
 		local AllParents, ObjectParents = self:BulkCollectParents(Items)
 		local Duplicates = self:FindDuplicates(AllParents)
@@ -30,14 +41,17 @@ local RenderFuncs = {
 			local Path, ParentsCount = Parser:MakePathString({
 				Object = Object
 			})
-			
+
 			--// Check the parent count to prevent single paths
-			if ParentsCount < 3 then continue end
+			--if ParentsCount < 3 then continue end
+			
+			local Name = Formatter:MakeName(Object)
 
 			--// Make variable
 			self:MakeVariable({
 				Lookup = Object,
-				Comment = "Compressed duplicate",
+				Name = Name,
+				--Comment = "Compressed duplicate",
 				Value = Path
 			})
 		end
@@ -60,13 +74,46 @@ function Module.new(Values): Module
 		VariablesDict = {},
 		VariableLookup = {},
 		InstanceQueue = {},
-		VariableCount = 0,
+		VariableNames = {},
+		NoNameCount = 0
 	}
 	return setmetatable(Class, Module)
 end
 
-function Module:GetVariableCount(): number
-	return self.VariableCount
+function Module:GetNoNameCount(): number
+	return self.NoNameCount
+end
+
+function Module:AddVariableToClass(ClassDict: ClassDict, Data: VariableData)
+	--// Variable data
+	local Value = Data.Value
+	local Lookup = Data.Lookup or Value
+
+	ClassDict.VariableCount += 1
+
+	--// Class data
+	local Position = ClassDict.VariableCount
+	local Variables = ClassDict.Variables
+
+	Data.Order = Position
+	Variables[Lookup] = Data
+end
+
+function Module:GetClassDict(Class: string): ClassDict
+	local Variables = self.VariablesDict
+	local ClassDict = Variables[Class]
+
+	--// Return existing
+	if ClassDict then return ClassDict end
+
+	--// Create class dict
+	ClassDict = {
+		VariableCount = 0,
+		Variables = {}
+	}
+
+	Variables[Class] = ClassDict
+	return ClassDict
 end
 
 function Module:IsGlobal(Value): boolean
@@ -93,20 +140,47 @@ function Module:IsService(Object: Instance): boolean
 	return Success and ClassName or nil
 end
 
-
-function Module:MakeName(Data): string
-	--// Check if the variable already has defined name
-	local Name = Data.Name
-	if Name then 
-		return Name 
+function Module:IncreaseNameUseCount(Name: string): number
+	if not Name then return 0 end
+	
+	local VariableNames = self.VariableNames	
+	local NameUseCount = VariableNames[Name]
+	
+	--// Create missing dict
+	if not NameUseCount then
+		NameUseCount = 0
+		VariableNames[Name] = NameUseCount
 	end
+	
+	VariableNames[Name] += 1
 
-	self.VariableCount += 1
+	return NameUseCount
+end
 
-	local VariableCount = self.VariableCount
+function Module:IncreaseNoNameCount(): number
+	self.NoNameCount += 1
+	return self.NoNameCount
+end
+
+function Module:CheckName(Data): string
+	local Name = Data.Name
+	local NameUseCount = self:IncreaseNameUseCount(Name)
+	
+	--// Check if the variable already has defined name
+	if Name then
+		if NameUseCount <= 0 then 
+			return Name 
+		else
+			return `{Name}{NameUseCount}`
+		end
+	end
+	
+	--// Create a default variable name
+	local NoNameCount = self:IncreaseNoNameCount()
+
+	--// Format VariableBase string
 	local Base = self.VariableBase
-
-	return Base:format(VariableCount)
+	return Base:format(NoNameCount)
 end
 
 function Module:GetVariable(Value): VariableData?
@@ -114,8 +188,18 @@ function Module:GetVariable(Value): VariableData?
 	return VariableLookup[Value]
 end
 
+function Module:OrderVariables(Variables): table
+	local Ordered = {}
+
+	for Lookup, Data in next, Variables do
+		local Order = Data.Order
+		table.insert(Ordered, Order, Data)
+	end
+
+	return Ordered
+end
+
 function Module:MakeVariable(Data: VariableData): string
-	local Variables = self.VariablesDict
 	local VariableLookup = self.VariableLookup
 	local InstanceQueue = self.InstanceQueue
 
@@ -141,18 +225,14 @@ function Module:MakeVariable(Data: VariableData): string
 	end
 
 	--// Generate variable name
-	local Name = self:MakeName(Data)
+	local Name = self:CheckName(Data)
 	Data.Name = Name
 
-	local ClassDict = Variables[Class]
-	if not ClassDict then
-		ClassDict = {}
-		Variables[Class] = ClassDict
-	end
+	--// Check variable class dict
+	local ClassDict = self:GetClassDict(Class)
+	self:AddVariableToClass(ClassDict, Data)
 
-	ClassDict[Lookup] = Data
 	VariableLookup[Lookup] = Data
-
 	return Name
 end
 
@@ -275,7 +355,7 @@ function Module:BulkCollectParents(Table): (table, table)
 		MultiInsert(AllParents, Parents)
 		ObjectParents[Object] = Parents
 	end
-	
+
 	return AllParents, ObjectParents
 end
 

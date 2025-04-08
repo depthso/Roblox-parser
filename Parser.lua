@@ -22,7 +22,8 @@ end
 function Module:FormatTableKey(Index): string?
 	local Formatter = self.Formatter
 	local NeedsBrackets = Formatter:NeedsBrackets(Index)
-
+	
+	--// Check if the data type is allowed
 	if NeedsBrackets then return end
 	if typeof(Index) ~= "string" then return end
 
@@ -97,10 +98,16 @@ function Module:MakeVariableCodeLine(Data: table): string
 	return `{Line}{End}`
 end
 
-function Module:MakeVariableCodeLines(Variables: table): string
+function Module:MakeVariableCodeLines(ClassDict: table): string
+	local Variables = self.Variables
+	
+	--// Order variables into array
+	local VariablesDict = ClassDict.Variables
+	local Ordered = Variables:OrderVariables(VariablesDict)
+	
+	--// Compile string
 	local Lines = ""
-
-	for Index, Data in Variables do
+	for Index, Data in Ordered do
 		local Line = self:MakeVariableCodeLine(Data)
 		Lines ..= `{Line}\n`
 	end
@@ -116,14 +123,14 @@ function Module:MakeVariableCode(Order: table): string
 
 	local Index = 0
 	for _, Class in next, Order do
-		local Variables = ClassedVariables[Class]
-		if not Variables then continue end
+		local ClassDict = ClassedVariables[Class]
+		if not ClassDict then continue end
 
 		Index += 1
 
 		local NewLine = Index > 1 and "\n" or ""
 		Code ..= `{NewLine}-- {Class}\n`
-		Code ..= self:MakeVariableCodeLines(Variables)
+		Code ..= self:MakeVariableCodeLines(ClassDict)
 	end
 
 	return Code
