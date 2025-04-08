@@ -43,7 +43,7 @@ local RenderFuncs = {
 			})
 
 			--// Check the parent count to prevent single paths
-			--if ParentsCount < 3 then continue end
+			if ParentsCount < 3 then continue end
 			
 			local Name = Formatter:MakeName(Object)
 
