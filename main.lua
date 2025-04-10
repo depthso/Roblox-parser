@@ -1,3 +1,5 @@
+--!strict
+
 --[[
     Written by depso
     GNU GPLv3 License
@@ -5,9 +7,13 @@
     https://github.com/depthso
 ]]
 
+type Table = {
+	[any]: any
+}
+
 local Module = {
 	--// Package data
-	Version = "1.0.5",
+	Version = "1.0.6",
 	Author = "Depso",
 	License = "GNU-GPLv3",
 	Repository = "https://github.com/depthso/Roblox-parser",
@@ -23,7 +29,7 @@ local ImportModules = {
 	"Variables"
 }
 
-local function MergeDict(Base: table, New: table)
+local function MergeDict(Base: Table, New: Table)
 	for Key, Value in next, New do
 		Base[Key] = Value
 	end
@@ -31,10 +37,11 @@ end
 
 --// This can be replaced
 function Module:Import(Name: string)
-	return require(script[Name])
+	local Script = script:FindFirstChild(Name)
+	return require(Script)
 end
 
-function Module:Load(): Module
+function Module:Load()
 	local Modules = self.Modules
 
 	for _, Name in next, ImportModules do
@@ -44,7 +51,7 @@ function Module:Load(): Module
 	return self
 end
 
-function Module:New(Data: table): table
+function Module:New(Data: Table): Table
 	local Modules = self.Modules
 
 	local Class = {

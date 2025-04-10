@@ -8,7 +8,7 @@ Module.__index = Module
 
 function GetDictSize(Dict: table): number
 	local Count = 0
-	for Key, Value in Dict do
+	for _ in next, Dict do
 		Count += 1
 	end
 	return Count
@@ -43,8 +43,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 	local NoBrackets = Data.NoBrackets
 	local Table = Data.Table
 
-	local IsArray = Table[1]
-	local ItemsCount = IsArray and #Table or GetDictSize(Table)
+	local ItemsCount = GetDictSize(Table)
 
 	--// Empty table
 	if ItemsCount == 0 then
@@ -60,6 +59,8 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 		local Ending = ""
 		local KeyString = ""
 		local ValueString = Formatter:Format(Value, Data)
+		
+		Position += 1
 
 		--// Format the index value
 		if typeof(Index) ~= "number" then
@@ -69,9 +70,8 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 				KeyString = `[{IndexString}] = `
 			end
 		end
-
+		
 		--// Check if , should be added to the line
-		Position += 1
 		if Position < ItemsCount then
 			Ending = ","
 		end

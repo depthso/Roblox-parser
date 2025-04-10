@@ -1,16 +1,20 @@
+--!strict
+
 type VariableData = {
 	Name: string?,
 	Value: any,
 	Order: number,
+	Lookup: any?,
+	Class: string?,
 	Comment: string?
 }
 
-type table = {
+type Table = {
 	[any]: any
 }
 
 type VariablesDict = {
-	[string]: VariableData
+	[any]: VariableData
 }
 
 export type ClassDict = {
@@ -19,17 +23,18 @@ export type ClassDict = {
 }
 
 type Module = {
-	VariablesDict: table,
-	VariableLookup: table,
-	InstanceQueue: table,
-	NoNameCount: number
+	VariablesDict: Table,
+	VariableLookup: Table,
+	InstanceQueue: Table,
+	NoNameCount: number,
+	VariableBase: string
 }
 
 local Globals = getfenv(1)
 
 --// Variable pre-render functions 
 local RenderFuncs = {
-	["Instance"] = function(self, Items: table)
+	["Instance"] = function(self, Items: Table)
 		local Parser = self.Parser
 		local Formatter = self.Formatter
 
@@ -58,18 +63,18 @@ local RenderFuncs = {
 	end,
 }
 
-local Module: Module = {
+local Module = {
 	VariableBase = "Jit"
 }
 Module.__index = Module
 
-local function MultiInsert(Table: table, ToInsert: table)
+local function MultiInsert(Table: Table, ToInsert: Table)
 	for _, Value in next, ToInsert do
 		table.insert(Table, Value)
 	end
 end
 
-function Module.new(Values): Module
+function Module.new(Values)
 	local Class = {
 		VariablesDict = {},
 		VariableLookup = {},
@@ -77,7 +82,7 @@ function Module.new(Values): Module
 		VariableNames = {},
 		NoNameCount = 0
 	}
-	return setmetatable(Class, Module)
+	return setmetatable(Class, Module) :: Module
 end
 
 function Module:GetNoNameCount(): number
@@ -116,7 +121,7 @@ function Module:GetClassDict(Class: string): ClassDict
 	return ClassDict
 end
 
-function Module:IsGlobal(Value): boolean
+function Module:IsGlobal(Value: (string|Instance)): boolean
 	local IndexFunc = self.IndexFunc
 
 	--// Check based on instance name
@@ -125,7 +130,7 @@ function Module:IsGlobal(Value): boolean
 		return Globals[Name] == Value
 	end
 
-	return Globals[Value] and Value
+	return Globals[Value] and Value or false
 end
 
 function Module:IsService(Object: Instance): boolean
@@ -137,7 +142,7 @@ function Module:IsService(Object: Instance): boolean
 		return game:GetService(ClassName)
 	end)
 
-	return Success and ClassName or nil
+	return Success and ClassName or false
 end
 
 function Module:IncreaseNameUseCount(Name: string): number
@@ -188,7 +193,7 @@ function Module:GetVariable(Value): VariableData?
 	return VariableLookup[Value]
 end
 
-function Module:OrderVariables(Variables): table
+function Module:OrderVariables(Variables: VariablesDict): Table
 	local Ordered = {}
 
 	for Lookup, Data in next, Variables do
@@ -236,7 +241,7 @@ function Module:MakeVariable(Data: VariableData): string
 	return Name
 end
 
-function Module:CollectTableItems(Table, Callback: (Value: any)->nil)
+function Module:CollectTableItems(Table: Table, Callback: (Value: any)->nil)
 	local function Process(Value)
 		local Type = typeof(Value)
 
@@ -256,7 +261,7 @@ function Module:CollectTableItems(Table, Callback: (Value: any)->nil)
 	end
 end
 
-function Module:FindDuplicates(Table: table): table
+function Module:FindDuplicates(Table: Table): Table
 	local Duplicates = {}
 	local IndexStates = {}
 
@@ -265,8 +270,8 @@ function Module:FindDuplicates(Table: table): table
 
 		--// Check if the value has already been indexed
 		if State == 1 then
-			table.insert(Duplicates, Value)
 			IndexStates[Value] = 2
+			table.insert(Duplicates, Value)
 			continue
 		end
 
@@ -279,7 +284,7 @@ function Module:FindDuplicates(Table: table): table
 	return Duplicates
 end
 
-function Module:CollectTableTypes(Table: table, Types: table): table
+function Module:CollectTableTypes(Table: Table, Types: Table): Table
 	local Collections = {}
 
 	local function Process(Value)
@@ -303,7 +308,7 @@ function Module:CollectTableTypes(Table: table, Types: table): table
 	return Collections
 end
 
-function Module:MakeParentsTable(Object): table
+function Module:MakeParentsTable(Object: Instance): Table
 	local IndexFunc = self.IndexFunc
 	local Swaps = self.Swaps
 	local Variables = self.Variables
@@ -343,12 +348,12 @@ function Module:MakeParentsTable(Object): table
 	return Parents
 end
 
-function Module:BulkCollectParents(Table): (table, table)
+function Module:BulkCollectParents(Objects: Table): (Table, Table)
 	local AllParents = {}
 	local ObjectParents = {}
 
 	--// Collect all parents
-	for _, Object in next, Table do
+	for _, Object in next, Objects do
 		if typeof(Object) ~= "Instance" then continue end
 
 		local Parents = self:MakeParentsTable(Object)
@@ -359,7 +364,7 @@ function Module:BulkCollectParents(Table): (table, table)
 	return AllParents, ObjectParents
 end
 
-function Module:PrerenderVariables(Table: table, Types: table)	
+function Module:PrerenderVariables(Table: Table, Types: Table)	
 	local Collections = self:CollectTableTypes(Table, Types)
 
 	--// Instances
