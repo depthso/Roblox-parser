@@ -308,7 +308,7 @@ function Module:CollectTableTypes(Table: Table, Types: Table): Table
 	return Collections
 end
 
-function Module:MakeParentsTable(Object: Instance): Table
+function Module:MakeParentsTable(Object: Instance, NoVariables: boolean?): Table
 	local IndexFunc = self.IndexFunc
 	local Swaps = self.Swaps
 	local Variables = self.Variables
@@ -335,7 +335,7 @@ function Module:MakeParentsTable(Object: Instance): Table
 
 		--// Check for a variable with the path
 		local Variable = Variables:GetVariable(Current)
-		if Variable and NextParent then
+		if not NoVariables and Variable and NextParent then
 			NextParent = nil
 		end
 

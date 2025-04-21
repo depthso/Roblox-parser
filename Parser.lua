@@ -153,7 +153,7 @@ function Module:MakePathString(Data: table): (string, number)
 	local ParentsCount = 0
 
 	--// Get object parents
-	Parents = Parents or Variables:MakeParentsTable(Base)
+	Parents = Parents or Variables:MakeParentsTable(Base, NoVariables)
 
 	local function ServiceCheck(Object: Instance, String: string)
 		local ServiceName = Variables:IsService(Object)
