@@ -67,14 +67,18 @@ Module.Formats = {
 	["BrickColor"] = function(self, Value)
 		return `BrickColor.new("{Value.Name}")`
 	end,
-	["buffer"] = function(self, Value)
-		return `buffer.fromstring("{buffer.tostring(Value)}")`
-	end,
+	--["buffer"] = function(self, Value)
+	--	return `buffer.fromstring("{buffer.tostring(Value)}")`
+	--end,
 	["DateTime"] = function(self, Value)
 		return `DateTime.fromUnixTimestampMillis({Value.UnixTimestampMillis})`
 	end,
 	["Enum"] = `%*`,
-	["string"] = `"%*"`,
+	["string"] = function(self, Value)
+		local Default = `"%*"`
+		local Patched = Value:gsub("\"", [[\"]])
+		return Default:format(Patched)
+	end,
 	["number"] = `%*`,
 	["TweenInfo"] = function(self, Value)
 		local Style = `Enum.EasingStyle.{Value.EasingStyle.Name}`
@@ -219,7 +223,6 @@ function Module:Format(Value, Extra)
 
 	--// Check if the data-type is supported
 	if not Format then
-		warn("No format for type", Type)
 		return `{Value} --[[{Type} not supported]]`
 	end
 
