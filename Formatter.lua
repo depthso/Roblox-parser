@@ -7,6 +7,7 @@ Module.__index = Module
 
 --// Defaults
 local DefaultTween = TweenInfo.new()
+local GetServerTimeNow = workspace.GetServerTimeNow
 
 Module.ClassNameStrings = {
 	["DataModel"] = "game",
@@ -136,8 +137,12 @@ function Module:UnpackVector(Vector, IsVector2: boolean?): (number, number, numb
 	return math.round(X), math.round(Y), math.round(Z)
 end
 
+function Module:GetServerTimeNow(): number
+	return GetServerTimeNow(workspace)
+end
+
 function Module:MakeReplacements(): table
-	local ServerTime = math.round(workspace:GetServerTimeNow())
+	local ServerTime = math.round(self:GetServerTimeNow())
 	local GameTime = math.round(workspace.DistributedGameTime)
 	
 	return {
