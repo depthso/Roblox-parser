@@ -1,9 +1,10 @@
-type Module = {
-	Variables: table,
-	Banner: string
+--!strict
+
+type table = {
+	[any]: any
 }
 
-local Module: Module = {}
+local Module = {}
 Module.__index = Module
 
 function GetDictSize(Dict: table): number
@@ -14,7 +15,7 @@ function GetDictSize(Dict: table): number
 	return Count
 end
 
-function Module.new(Values): Module
+function Module.new(Values)
 	local Class = {}
 	return setmetatable(Class, Module)
 end

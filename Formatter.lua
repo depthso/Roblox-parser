@@ -1,3 +1,7 @@
+type table = {
+	[any]: any
+}
+
 local Module = {}
 Module.__index = Module
 
@@ -132,14 +136,9 @@ function Module:UnpackVector(Vector, IsVector2: boolean?): (number, number, numb
 	return math.round(X), math.round(Y), math.round(Z)
 end
 
-function Module:CacheSpecialFormats() --TODO
-	return {
-		math.round(workspace:GetServerTimeNow())
-	}
-end
-
-function Module:MakeValueSwaps()
+function Module:MakeReplacements(): table
 	local ServerTime = math.round(workspace:GetServerTimeNow())
+	local GameTime = math.round(workspace.DistributedGameTime)
 	
 	return {
 		[Vector2.one] = "Vector2.one",
@@ -148,18 +147,25 @@ function Module:MakeValueSwaps()
 		[Vector3.zero] = "Vector3.zero",
 		[math.huge] = "math.huge",
 		[math.pi] = "math.pi",
+		[workspace.Gravity] = "workspace.Gravity",
+		[workspace.AirDensity] = "workspace.AirDensity",
+		[GameTime] = "workspace.DistributedGameTime",
 		[ServerTime] = "workspace:GetServerTimeNow()"
 	}
 end
 
 function Module:FindValueSwap(Value)
-	local ValueSwaps = self:MakeValueSwaps()
-	local IsNumber = typeof(Value) == "number"
+	local ValueSwaps = self.ValueSwaps
 	
-	local Original = ValueSwaps[Value]
-	if Original then return Original end
+	--// Lookup replacement in ValueSwaps
+	local Replacement = ValueSwaps[Value]
+	if Replacement then return Replacement end
+	
+	--// Check if the value is a number
+	local IsNumber = typeof(Value) == "number"
 	if not IsNumber then return end
 	
+	--// Round the number up
 	local Rounded = math.round(Value)
 	return ValueSwaps[Rounded]
 end
@@ -171,20 +177,24 @@ end
 
 function Module:MakeName(Value): string?
 	local Name = self:ObjectToString(Value)
-	Name = Name:gsub(" ", "")
+	Name = Name:gsub("[./ #%@$]", "")
 	
 	--// Check if the name can be used for a variable
 	if self:NeedsBrackets(Name) then return end
 	
 	--// Prevent long and short variable names
-	if #Name < 3 or #Name > 15 then return end
-	
+	if #Name < 1 or #Name > 25 then return end
+
 	return Name
 end
 
 function Module.new(Values: table): Module
-	local Class = {}
-	return setmetatable(Class, Module)
+	local Base = {}
+	
+	local Class = setmetatable(Base, Module)
+	Class.ValueSwaps = Class:MakeReplacements()
+	
+	return Class
 end
 
 function Module:Format(Value, Extra)
@@ -201,6 +211,7 @@ function Module:Format(Value, Extra)
 	local Format = Formats[Type]
 	local Name = nil
 	
+	--// Variable name based on Instance name
 	if typeof(Value) == "Instance" then
 		Name = self:MakeName(Value)
 	end
