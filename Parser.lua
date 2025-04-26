@@ -23,7 +23,7 @@ end
 function Module:FormatTableKey(Index): string?
 	local Formatter = self.Formatter
 	local NeedsBrackets = Formatter:NeedsBrackets(Index)
-	
+
 	--// Check if the data type is allowed
 	if NeedsBrackets then return end
 	if typeof(Index) ~= "string" then return end
@@ -60,7 +60,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 		local Ending = ""
 		local KeyString = ""
 		local ValueString = Formatter:Format(Value, Data)
-		
+
 		Position += 1
 
 		--// Format the index value
@@ -71,7 +71,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 				KeyString = `[{IndexString}] = `
 			end
 		end
-		
+
 		--// Check if , should be added to the line
 		if Position < ItemsCount then
 			Ending = ","
@@ -101,11 +101,11 @@ end
 
 function Module:MakeVariableCodeLines(ClassDict: table): string
 	local Variables = self.Variables
-	
+
 	--// Order variables into array
 	local VariablesDict = ClassDict.Variables
 	local Ordered = Variables:OrderVariables(VariablesDict)
-	
+
 	--// Compile string
 	local Lines = ""
 	for Index, Data in Ordered do
@@ -196,7 +196,7 @@ function Module:MakePathString(Data: table): (string, number)
 
 		local Brackets = Formatter:NeedsBrackets(String)
 		local Separator = Index > 1 and "." or ""
-		
+
 		ParentsCount += 1
 		PathString ..= Brackets and `["{String}"]` or `{Separator}{String}`
 	end

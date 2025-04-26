@@ -13,7 +13,7 @@ type Table = {
 
 local Module = {
 	--// Package data
-	Version = "1.0.7",
+	Version = "1.0.8",
 	Author = "Depso",
 	License = "GNU-GPLv3",
 	Repository = "https://github.com/depthso/Roblox-parser",

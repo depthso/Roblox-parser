@@ -144,19 +144,34 @@ end
 function Module:MakeReplacements(): table
 	local ServerTime = math.round(self:GetServerTimeNow())
 	local GameTime = math.round(workspace.DistributedGameTime)
-	
-	return {
-		[Vector2.one] = "Vector2.one",
-		[Vector2.zero] = "Vector2.zero",
-		[Vector3.one] = "Vector3.one",
-		[Vector3.zero] = "Vector3.zero",
-		[math.huge] = "math.huge",
-		[math.pi] = "math.pi",
-		[workspace.Gravity] = "workspace.Gravity",
-		[workspace.AirDensity] = "workspace.AirDensity",
-		[GameTime] = "workspace.DistributedGameTime",
-		[ServerTime] = "workspace:GetServerTimeNow()"
-	}
+
+	local Replacements = {}
+	local function AddReplacement(Key, Replacement)
+		--// Convert to a string type (prevents table mismatch)
+		if typeof(Key) == "number" then
+			Key = tostring(Key)
+		end
+
+		Replacements[Key] = Replacement
+	end
+
+	--// Replacements
+	AddReplacement(Vector2.one, "Vector2.one")
+	AddReplacement(Vector2.zero, "Vector2.zero")
+	AddReplacement(Vector3.one, "Vector3.one")
+	AddReplacement(Vector3.zero, "Vector3.zero")
+	AddReplacement(math.huge, "math.huge")
+	AddReplacement(math.pi, "math.pi")
+	AddReplacement(workspace.Gravity, "workspace.Gravity")
+	AddReplacement(workspace.AirDensity, "workspace.AirDensity")
+	AddReplacement(GameTime, "workspace.DistributedGameTime")
+	AddReplacement(ServerTime, "workspace:GetServerTimeNow()")
+
+	return Replacements
+end
+
+function Module:SetValueSwaps(ValueSwaps: table)
+	self.ValueSwaps = ValueSwaps
 end
 
 function Module:FindValueSwap(Value)
@@ -172,7 +187,7 @@ function Module:FindValueSwap(Value)
 	
 	--// Round the number up
 	local Rounded = math.round(Value)
-	return ValueSwaps[Rounded]
+	return ValueSwaps[tostring(Rounded)]
 end
 
 function Module:NeedsBrackets(String: string)
@@ -182,7 +197,7 @@ end
 
 function Module:MakeName(Value): string?
 	local Name = self:ObjectToString(Value)
-	Name = Name:gsub("[./ #%@$]", "")
+	Name = Name:gsub("[./ #%@$%£+-()]", "")
 	
 	--// Check if the name can be used for a variable
 	if self:NeedsBrackets(Name) then return end
