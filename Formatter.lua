@@ -141,10 +141,14 @@ function Module:GetServerTimeNow(): number
 	return GetServerTimeNow(workspace)
 end
 
-function Module:MakeReplacements(): table
-	local ServerTime = math.round(self:GetServerTimeNow())
-	local GameTime = math.round(workspace.DistributedGameTime)
+function Module:MakeReplacements(Timestamp: number): table
+	local Delay = tick() - (Timestamp or tick())
 
+	--// Time specific
+	local ServerTime = math.round(self:GetServerTimeNow() - Delay)
+	local GameTime = math.round(workspace.DistributedGameTime - Delay)
+
+	--// Replacement wrapper
 	local Replacements = {}
 	local function AddReplacement(Key, Replacement)
 		--// Convert to a string type (prevents table mismatch)
