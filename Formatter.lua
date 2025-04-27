@@ -152,9 +152,9 @@ function Module:MakeReplacements(Timestamp: number): table
 	local Replacements = {}
 	local function AddReplacement(Key, Replacement)
 		--// Convert to a string type (prevents table mismatch)
-		if typeof(Key) == "number" then
-			Key = tostring(Key)
-		end
+		-- if typeof(Key) == "number" then
+		-- 	Key = tostring(Key)
+		-- end
 
 		Replacements[Key] = Replacement
 	end
@@ -178,12 +178,30 @@ function Module:SetValueSwaps(ValueSwaps: table)
 	self.ValueSwaps = ValueSwaps
 end
 
+function Module:FindStringIntSwap(Value: string)
+	--// Check if string is a int
+	local Int = tonumber(Value)
+	if not Int then return end
+
+	--// Find a swap for the int value
+	local Swap = self:FindValueSwap(Int)
+	return Swap
+end
+
 function Module:FindValueSwap(Value)
 	local ValueSwaps = self.ValueSwaps
 	
 	--// Lookup replacement in ValueSwaps
 	local Replacement = ValueSwaps[Value]
 	if Replacement then return Replacement end
+
+	--// String formatting
+	if typeof(Value) == "string" then
+		local Swap = self:FindStringIntSwap(Value)
+		if Swap then
+			return `tostring({Swap})`
+		end
+	end
 	
 	--// Check if the value is a number
 	local IsNumber = typeof(Value) == "number"
@@ -191,7 +209,7 @@ function Module:FindValueSwap(Value)
 	
 	--// Round the number up
 	local Rounded = math.round(Value)
-	return ValueSwaps[tostring(Rounded)]
+	return ValueSwaps[Rounded]
 end
 
 function Module:NeedsBrackets(String: string)
@@ -212,9 +230,8 @@ function Module:MakeName(Value): string?
 	return Name
 end
 
-function Module.new(Values: table): Module
+function Module.new(Values: table)
 	local Base = {}
-	
 	local Class = setmetatable(Base, Module)
 	Class.ValueSwaps = Class:MakeReplacements()
 	

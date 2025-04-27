@@ -22,11 +22,13 @@ end
 
 function Module:FormatTableKey(Index): string?
 	local Formatter = self.Formatter
-	local NeedsBrackets = Formatter:NeedsBrackets(Index)
+
+	--// Only allow strings for bracket checking
+	if typeof(Index) ~= "string" then return end
 
 	--// Check if the data type is allowed
+	local NeedsBrackets = Formatter:NeedsBrackets(Index)
 	if NeedsBrackets then return end
-	if typeof(Index) ~= "string" then return end
 
 	return `{Index} = `
 end
@@ -57,17 +59,19 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 	--// Generate string
 	local Position = 0
 	for Index, Value in next, Table do
-		local Ending = ""
-		local KeyString = ""
-		local ValueString = Formatter:Format(Value, Data)
-
 		Position += 1
 
+		local ValueString = Formatter:Format(Value, Data)
+		local IsOrdered = Index == Position
+
+		local Ending = ""
+		local KeyString = ""
+
 		--// Format the index value
-		if typeof(Index) ~= "number" then
+		if typeof(Index) ~= "number" or not IsOrdered then
 			KeyString = self:FormatTableKey(Index)
 			if not KeyString then
-				local IndexString = Formatter:Format(Value, Data)
+				local IndexString = Formatter:Format(Index, Data)
 				KeyString = `[{IndexString}] = `
 			end
 		end
@@ -90,8 +94,6 @@ function Module:MakeVariableCodeLine(Data: table): string
 	local Name = Data.Name
 	local Value = Data.Value
 	local Comment = Data.Comment
-
-	--print("Variable-data:", Data)
 
 	local Line = `local {Name} = {Value}`
 	local End = Comment and ` -- {Comment}` or ""

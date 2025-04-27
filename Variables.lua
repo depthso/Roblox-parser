@@ -30,6 +30,12 @@ type Module = {
 	VariableBase: string
 }
 
+--// Module
+local Module = {
+	VariableBase = "Jit"
+}
+Module.__index = Module
+
 local Globals = getfenv(1)
 
 --// Variable pre-render functions 
@@ -38,7 +44,7 @@ local RenderFuncs = {
 		local Parser = self.Parser
 		local Formatter = self.Formatter
 
-		local AllParents, ObjectParents = self:BulkCollectParents(Items)
+		local AllParents = self:BulkCollectParents(Items)
 		local Duplicates = self:FindDuplicates(AllParents)
 
 		--// Make duplicates into variables
@@ -63,11 +69,6 @@ local RenderFuncs = {
 	end,
 }
 
-local Module = {
-	VariableBase = "Jit"
-}
-Module.__index = Module
-
 local function MultiInsert(Table: Table, ToInsert: Table)
 	for _, Value in next, ToInsert do
 		table.insert(Table, Value)
@@ -82,7 +83,7 @@ function Module.new(Values)
 		VariableNames = {},
 		NoNameCount = 0
 	}
-	return setmetatable(Class, Module) :: Module
+	return setmetatable(Class, Module)
 end
 
 function Module:GetNoNameCount(): number
@@ -121,7 +122,7 @@ function Module:GetClassDict(Class: string): ClassDict
 	return ClassDict
 end
 
-function Module:IsGlobal(Value: (string|Instance)): boolean
+function Module:IsGlobal(Value: (string|Instance)): (string|boolean)
 	local IndexFunc = self.IndexFunc
 
 	--// Check based on instance name
@@ -133,7 +134,7 @@ function Module:IsGlobal(Value: (string|Instance)): boolean
 	return Globals[Value] and Value or false
 end
 
-function Module:IsService(Object: Instance): boolean
+function Module:IsService(Object: Instance): (string|boolean)
 	local IndexFunc = self.IndexFunc
 	local ClassName = IndexFunc(Object, "ClassName")
 
