@@ -8,12 +8,12 @@
 ]]
 
 type Table = {
-	[any]: any
+	[any]: any 
 }
 
 local Module = {
 	--// Package data
-	Version = "1.0.9",
+	Version = "1.1.0",
 	Author = "Depso",
 	License = "GNU-GPLv3",
 	Repository = "https://github.com/depthso/Roblox-parser",

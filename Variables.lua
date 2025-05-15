@@ -54,8 +54,8 @@ local RenderFuncs = {
 			})
 
 			--// Check the parent count to prevent single paths
-			if ParentsCount < 2 then continue end
-			
+			if ParentsCount < 3 then continue end
+
 			local Name = Formatter:MakeName(Object)
 
 			--// Make variable
@@ -148,16 +148,16 @@ end
 
 function Module:IncreaseNameUseCount(Name: string): number
 	if not Name then return 0 end
-	
+
 	local VariableNames = self.VariableNames	
 	local NameUseCount = VariableNames[Name]
-	
+
 	--// Create missing dict
 	if not NameUseCount then
 		NameUseCount = 0
 		VariableNames[Name] = NameUseCount
 	end
-	
+
 	VariableNames[Name] += 1
 
 	return NameUseCount
@@ -171,7 +171,7 @@ end
 function Module:CheckName(Data): string
 	local Name = Data.Name
 	local NameUseCount = self:IncreaseNameUseCount(Name)
-	
+
 	--// Check if the variable already has defined name
 	if Name then
 		if NameUseCount <= 0 then 
@@ -180,7 +180,7 @@ function Module:CheckName(Data): string
 			return `{Name}{NameUseCount}`
 		end
 	end
-	
+
 	--// Create a default variable name
 	local NoNameCount = self:IncreaseNoNameCount()
 

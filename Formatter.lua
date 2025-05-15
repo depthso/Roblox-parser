@@ -11,33 +11,38 @@ local GetServerTimeNow = workspace.GetServerTimeNow
 
 Module.ClassNameStrings = {
 	["DataModel"] = "game",
-	["Workspace"] = "workspace"
+	["Workspace"] = "workspace",
+	["Stats"] = "stats()",
+	["GlobalSettings"] = "settings()",
+	["PluginManagerInterface"] = "PluginManager()",
+	["UserSettings"] = "UserSettings()",
+	["DebuggerManager"] = "DebuggerManager()"
 }
 
 --// Format type functions
 Module.Formats = {
 	["CFrame"] = function(self, Value)
-		local X, Y, Z = self:UnpackVector(Value)
-		return `CFrame.new({X},{Y},{Z})`
+		local Arguments = self:FormatVectorValues(Value, false, true)
+		return `CFrame.new({Arguments})`
 	end,
 	["Vector3"] = function(self, Value)
-		local X, Y, Z = self:UnpackVector(Value)
-		return `Vector3.new({X},{Y},{Z})`
+		local Arguments = self:FormatVectorValues(Value)
+		return `Vector3.new({Arguments})`
 	end,
 	["Vector2"] = function(self, Value)
-		local X, Y = self:UnpackVector(Value, true)
-		return `Vector2.new({X},{Y})`
+		local Arguments = self:FormatVectorValues(Value, true)
+		return `Vector2.new({Arguments})`
 	end,
 	["Vector2int16"] = function(self, Value)
-		local X, Y = self:UnpackVector(Value, true)
-		return `Vector2int16.new({X},{Y})`
+		local Arguments = self:FormatVectorValues(Value, true)
+		return `Vector2int16.new({Arguments})`
 	end,
 	["Vector3int16"] = function(self, Value)
-		local X, Y, Z = self:UnpackVector(Value)
-		return `Vector3int16.new({X},{Y},{Z})`
+		local Arguments = self:FormatVectorValues(Value)
+		return `Vector3int16.new({Arguments})`
 	end,
 	["Color3"] = function(self, Value)
-		return `Color3.fromRGB({Value.R*255},{Value.G*255},{Value.B*255})`
+		return `Color3.fromRGB({Value.R*255}, {Value.G*255}, {Value.B*255})`
 	end,
 	["NumberRange"] = function(self, Value)
 		local Min = self:Format(Value.Min)
@@ -80,22 +85,30 @@ Module.Formats = {
 	end,
 	["Enum"] = `%*`,
 	["string"] = function(self, Value)
-		local Default = `"%*"`
-		local Patched = Value:gsub("\"", [[\"]])
-		return Default:format(Patched)
+		local Filtered = self:MakePrintable(Value)
+		local FormatBase = `"%*"`
+
+		local HasBrackets = Filtered:find("%[%[=*[[]")
+		local HasNewLine = Filtered:find("[\n\r]")
+
+		if not HasBrackets and HasNewLine then
+			FormatBase = "[[%*]]"
+		end
+
+		return FormatBase:format(Filtered)
 	end,
 	["number"] = `%*`,
 	["TweenInfo"] = function(self, Value)
 		local Style = `Enum.EasingStyle.{Value.EasingStyle.Name}`
 		local Direction = `Enum.EasingDirection.{Value.EasingDirection.Name}`
-		
+
 		local IsDefaultStyle = Value.EasingStyle == DefaultTween.EasingStyle 
 		local IsDefaultDirection = Value.EasingDirection == DefaultTween.EasingDirection
-		
+
 		if IsDefaultStyle and IsDefaultDirection then
 			return `TweenInfo.new({Value.Time})`
 		end
-		
+
 		return `TweenInfo.new({Value.Time}, {Style}, {Direction})`
 	end,
 	["boolean"] = `%*`,
@@ -132,9 +145,49 @@ Module.Formats = {
 	end,
 }
 
-function Module:UnpackVector(Vector, IsVector2: boolean?): (number, number, number)
+function Module:IsPrintable(Character: string)
+	return Character:match("[\n\r%g ]")
+end
+
+function Module:MakePrintable(String: string): string
+	local Filtered = String:gsub("\"", [[\"]])
+
+	return Filtered:gsub(".", function(Character: string)
+		--// Printable character
+		if self:IsPrintable(Character) then
+			return Character
+		end
+
+		--// Format non-printable characters by /hex
+		return `/{Character:byte()}`
+	end)
+end
+
+function Module:FormatVectorValues(Vector, ...): string
+	local Values = {self:RoundVector(Vector, ...)}
+	return table.concat(Values, ", ")
+end
+
+function Module:RoundValues(Table: table): table
+	local RoundedTable = {}
+	
+	for _, Value in next, Table do
+		local Rounded = math.round(Value)
+		table.insert(RoundedTable, Rounded)
+	end
+	
+	return RoundedTable
+end
+
+function Module:RoundVector(Vector, IsVector2: boolean?, IsCFrame: boolean?): (number, number, number?)
 	local X, Y, Z = Vector.X, Vector.Y, not IsVector2 and Vector.Z or 0
-	return math.round(X), math.round(Y), math.round(Z)
+
+	if IsCFrame then
+		local Components = {Vector:GetComponents()}
+		return unpack(self:RoundValues(Components))
+	end
+
+	return math.round(X), math.round(Y), not IsVector2 and math.round(Z) or nil
 end
 
 function Module:GetServerTimeNow(): number
@@ -151,11 +204,11 @@ function Module:MakeReplacements(Timestamp: number): table
 	--// Replacement wrapper
 	local Replacements = {}
 	local function AddReplacement(Key, Replacement)
-		--// Convert to a string type (prevents table mismatch)
-		-- if typeof(Key) == "number" then
-		-- 	Key = tostring(Key)
-		-- end
-
+		--// Negitive version
+		if typeof(Key) == "number" then
+			Replacements[-Key] = `-{Replacement}`
+		end
+		
 		Replacements[Key] = Replacement
 	end
 
@@ -168,6 +221,7 @@ function Module:MakeReplacements(Timestamp: number): table
 	AddReplacement(math.pi, "math.pi")
 	AddReplacement(workspace.Gravity, "workspace.Gravity")
 	AddReplacement(workspace.AirDensity, "workspace.AirDensity")
+	AddReplacement(workspace.CurrentCamera.CFrame, "workspace.CurrentCamera.CFrame")
 	AddReplacement(GameTime, "workspace.DistributedGameTime")
 	AddReplacement(ServerTime, "workspace:GetServerTimeNow()")
 
@@ -190,7 +244,7 @@ end
 
 function Module:FindValueSwap(Value)
 	local ValueSwaps = self.ValueSwaps
-	
+
 	--// Lookup replacement in ValueSwaps
 	local Replacement = ValueSwaps[Value]
 	if Replacement then return Replacement end
@@ -202,11 +256,11 @@ function Module:FindValueSwap(Value)
 			return `tostring({Swap})`
 		end
 	end
-	
+
 	--// Check if the value is a number
 	local IsNumber = typeof(Value) == "number"
 	if not IsNumber then return end
-	
+
 	--// Round the number up
 	local Rounded = math.round(Value)
 	return ValueSwaps[Rounded]
@@ -214,27 +268,33 @@ end
 
 function Module:NeedsBrackets(String: string)
 	if not String then return end
+
+	--// Only allow strings for bracket checking
+	if typeof(String) ~= "string" then 
+		return true
+	end
+
 	return not String:match("^[%a_][%w_]*$")
 end
 
 function Module:MakeName(Value): string?
 	local Name = self:ObjectToString(Value)
 	Name = Name:gsub("[./ #%@$%£+-()]", "")
-	
+
 	--// Check if the name can be used for a variable
 	if self:NeedsBrackets(Name) then return end
-	
+
 	--// Prevent long and short variable names
 	if #Name < 1 or #Name > 25 then return end
 
 	return Name
 end
 
-function Module.new(Values: table)
+function Module.new(Values: table): table
 	local Base = {}
 	local Class = setmetatable(Base, Module)
 	Class.ValueSwaps = Class:MakeReplacements()
-	
+
 	return Class
 end
 
@@ -251,7 +311,7 @@ function Module:Format(Value, Extra)
 	local Type = typeof(Value)
 	local Format = Formats[Type]
 	local Name = nil
-	
+
 	--// Variable name based on Instance name
 	if typeof(Value) == "Instance" then
 		Name = self:MakeName(Value)
