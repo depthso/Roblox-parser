@@ -36,21 +36,23 @@ end
 type ParseTableIntoStringData = {
 	Table: table,
 	Indent: number?,
-	NoBrackets: boolean?
+	NoBrackets: boolean?,
+	NoVariables: boolean?
 }
-function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, number)
+function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, number, boolean)
 	local Formatter = self.Formatter
 
 	--// Unpack configuration
 	local Indent = Data.Indent or 0
-	local NoBrackets = Data.NoBrackets
 	local Table = Data.Table
+	local NoBrackets = Data.NoBrackets
 
 	local ItemsCount = GetDictSize(Table)
+	local IsArray = true
 
 	--// Empty table
 	if ItemsCount == 0 then
-		return NoBrackets and "" or "{}", ItemsCount
+		return NoBrackets and "" or "{}", ItemsCount, true
 	end
 
 	local IndentString = string.rep("	", Indent)
@@ -70,6 +72,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 		--// Format the index value
 		if typeof(Index) ~= "number" or not IsOrdered then
 			KeyString = self:FormatTableKey(Index)
+			IsArray = false
 			if not KeyString then
 				local IndexString = Formatter:Format(Index, Data)
 				KeyString = `[{IndexString}] = `
@@ -87,7 +90,7 @@ function Module:ParseTableIntoString(Data: ParseTableIntoStringData): (string, n
 	--// Close the table
 	TableString ..= `{IndentString}{not NoBrackets and "}" or ""}`
 
-	return TableString, ItemsCount
+	return TableString, ItemsCount, IsArray
 end
 
 function Module:MakeVariableCodeLine(Data: table): string
@@ -150,7 +153,7 @@ function Module:MakePathString(Data: table): (string, number)
 
 	local Base = Data.Object
 	local Parents = Data.Parents
-	local NoVariables = Data.NoVariables
+	local NoVariables = self.NoVariables or Data.NoVariables
 
 	local PathString = ""
 	local ParentsCount = 0
@@ -158,7 +161,7 @@ function Module:MakePathString(Data: table): (string, number)
 	--// Get object parents
 	Parents = Parents or Variables:MakeParentsTable(Base, NoVariables)
 
-	local function ServiceCheck(Object: Instance, String: string)
+	local function ServiceCheck(Object: Instance, String: string): boolean?
 		local ServiceName = Variables:IsService(Object)
 		if not ServiceName then return end
 

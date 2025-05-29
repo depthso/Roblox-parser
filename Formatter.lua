@@ -77,9 +77,11 @@ Module.Formats = {
 	["BrickColor"] = function(self, Value)
 		return `BrickColor.new("{Value.Name}")`
 	end,
-	--["buffer"] = function(self, Value)
-	--	return `buffer.fromstring("{buffer.tostring(Value)}")`
-	--end,
+	["buffer"] = function(self, Value)
+		local String = buffer.tostring(Value)
+		String = self:Format(String)
+		return `buffer.fromstring("{String}") --[[{Value}]]`
+	end,
 	["DateTime"] = function(self, Value)
 		return `DateTime.fromUnixTimestampMillis({Value.UnixTimestampMillis})`
 	end,
@@ -298,11 +300,16 @@ function Module.new(Values: table): table
 	return Class
 end
 
+type FormatExtra = {
+	NoVariables: boolean?,
+	Indent: number?
+}
 function Module:Format(Value, Extra)
 	local Formats = self.Formats
 	local Variables = self.Variables
 
 	Extra = Extra or {}
+	local NoVariables = self.NoVariables or Extra.NoVariables
 	
 	--// Check for a value swap
 	local Swap = self:FindValueSwap(Value)
@@ -322,7 +329,7 @@ function Module:Format(Value, Extra)
 		local Formatted, IsVariable = Format(self, Value, Extra)
 
 		--// Make variable
-		if IsVariable and not Extra.NoVariableCreate then
+		if IsVariable and not NoVariables then
 			Formatted = Variables:MakeVariable({
 				Name = Name,
 				Lookup = Value,

@@ -1,7 +1,7 @@
 --!strict
 
 type VariableData = {
-	Name: string?,
+	Name: string,
 	Value: any,
 	Order: number,
 	Lookup: any?,
@@ -313,9 +313,10 @@ function Module:MakeParentsTable(Object: Instance, NoVariables: boolean?): Table
 	local IndexFunc = self.IndexFunc
 	local Swaps = self.Swaps
 	local Variables = self.Variables
+	NoVariables = self.NoVariables or NoVariables
 
 	local Parents = {}
-	local NextParent = Object
+	local NextParent = Object :: Instance?
 
 	while true do
 		local Current = NextParent
@@ -366,6 +367,10 @@ function Module:BulkCollectParents(Objects: Table): (Table, Table)
 end
 
 function Module:PrerenderVariables(Table: Table, Types: Table)	
+	--// Disable compression if NoVariables is enabled
+	if self.NoVariables then return end
+
+	--// Collect keys and values in table
 	local Collections = self:CollectTableTypes(Table, Types)
 
 	--// Instances
