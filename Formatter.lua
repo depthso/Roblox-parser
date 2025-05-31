@@ -80,7 +80,7 @@ Module.Formats = {
 	["buffer"] = function(self, Value)
 		local String = buffer.tostring(Value)
 		String = self:Format(String)
-		return `buffer.fromstring("{String}") --[[{Value}]]`
+		return `buffer.fromstring({String}) --[[{Value}]]`
 	end,
 	["DateTime"] = function(self, Value)
 		return `DateTime.fromUnixTimestampMillis({Value.UnixTimestampMillis})`
