@@ -282,12 +282,13 @@ end
 function Module:MakeName(Value): string?
 	local Name = self:ObjectToString(Value)
 	Name = Name:gsub("[./ #%@$%£+-()]", "")
+	Name = self:MakePrintable(Name)
 
 	--// Check if the name can be used for a variable
 	if self:NeedsBrackets(Name) then return end
 
 	--// Prevent long and short variable names
-	if #Name < 1 or #Name > 25 then return end
+	if #Name < 1 or #Name > 30 then return end
 
 	return Name
 end
@@ -348,7 +349,7 @@ function Module:Format(Value, Extra)
 	return Format:format(Value)
 end
 
-function Module:ObjectToString(Object): string
+function Module:ObjectToString(Object: instance): string
 	local Swaps = self.Swaps
 	local IndexFunc = self.IndexFunc
 	local Replacements = self.ClassNameStrings
@@ -358,6 +359,7 @@ function Module:ObjectToString(Object): string
 
 	local Replacement = Replacements[ClassName]
 	local String = Replacement or Name
+	String = self:MakePrintable(String)
 
 	--// Check for swaps
 	if Swaps then
