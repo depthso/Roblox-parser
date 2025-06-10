@@ -150,6 +150,8 @@ Module.Formats = {
 function Module:IsPrintable(Character: string, NoNewlines: boolean)
 	--// Disallow \n and \r (return)
 	if NoNewlines then
+		Character = Character:gsub("\n", "\\n")
+		Character = Character:gsub("\r", "\\r")
 		return Character:match("[%g ]")
 	end
 
@@ -166,7 +168,7 @@ function Module:MakePrintable(String: string, NoNewlines: boolean): string
 		end
 
 		--// Format non-printable characters by /hex
-		return `/{Character:byte()}`
+		return `\\{Character:byte()}`
 	end)
 end
 
