@@ -150,8 +150,6 @@ Module.Formats = {
 function Module:IsPrintable(Character: string, NoNewlines: boolean)
 	--// Disallow \n and \r (return)
 	if NoNewlines then
-		Character = Character:gsub("\n", "\\n")
-		Character = Character:gsub("\r", "\\r")
 		return Character:match("[%g ]")
 	end
 
@@ -162,6 +160,11 @@ function Module:MakePrintable(String: string, NoNewlines: boolean): string
 	local Filtered = String:gsub("\"", [[\"]])
 
 	return Filtered:gsub(".", function(Character: string)
+		if NoNewlines then
+			Character = Character:gsub("\n", "\\n")
+			Character = Character:gsub("\r", "\\r")
+		end
+
 		--// Printable character
 		if self:IsPrintable(Character, NoNewlines) then
 			return Character
@@ -288,7 +291,7 @@ end
 
 function Module:MakeName(Value): string?
 	local Name = self:ObjectToString(Value)
-	Name = Name:gsub("[./ #%@$%£+-()]", "")
+	Name = Name:gsub("[./ #%@$%£+-()\n\r]", "")
 	Name = self:MakePrintable(Name, true)
 
 	--// Check if the name can be used for a variable
