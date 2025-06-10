@@ -147,16 +147,21 @@ Module.Formats = {
 	end,
 }
 
-function Module:IsPrintable(Character: string)
+function Module:IsPrintable(Character: string, NoNewlines: boolean)
+	--// Disallow \n and \r (return)
+	if NoNewlines then
+		return Character:match("[%g ]")
+	end
+
 	return Character:match("[\n\r%g ]")
 end
 
-function Module:MakePrintable(String: string): string
+function Module:MakePrintable(String: string, NoNewlines: boolean): string
 	local Filtered = String:gsub("\"", [[\"]])
 
 	return Filtered:gsub(".", function(Character: string)
 		--// Printable character
-		if self:IsPrintable(Character) then
+		if self:IsPrintable(Character, NoNewlines) then
 			return Character
 		end
 
@@ -282,7 +287,7 @@ end
 function Module:MakeName(Value): string?
 	local Name = self:ObjectToString(Value)
 	Name = Name:gsub("[./ #%@$%£+-()]", "")
-	Name = self:MakePrintable(Name)
+	Name = self:MakePrintable(Name, true)
 
 	--// Check if the name can be used for a variable
 	if self:NeedsBrackets(Name) then return end
@@ -359,7 +364,7 @@ function Module:ObjectToString(Object: instance): string
 
 	local Replacement = Replacements[ClassName]
 	local String = Replacement or Name
-	String = self:MakePrintable(String)
+	String = self:MakePrintable(String, true)
 
 	--// Check for swaps
 	if Swaps then
