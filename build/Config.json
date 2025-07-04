@@ -1,0 +1,7 @@
+{
+    "main": "src/Init.luau",
+    "output": "dist/Main.luau",
+    
+    "frame": "build/scripts/Header.luau",
+    "darkluaconfig": "build/darklua/darklua.json"
+}
