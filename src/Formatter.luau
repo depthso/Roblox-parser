@@ -110,12 +110,13 @@ Module.Formats = {
 
 		local IsDefaultStyle = Value.EasingStyle == DefaultTween.EasingStyle 
 		local IsDefaultDirection = Value.EasingDirection == DefaultTween.EasingDirection
+		local Time = math.round(Value.Time * 100) / 100
 
 		if IsDefaultStyle and IsDefaultDirection then
-			return `TweenInfo.new({Value.Time})`
+			return `TweenInfo.new({Time})`
 		end
 
-		return `TweenInfo.new({Value.Time}, {Style}, {Direction})`
+		return `TweenInfo.new({Time}, {Style}, {Direction})`
 	end,
 	["boolean"] = `%*`,
 	["Instance"] = function(self, Object: Instance)
@@ -134,7 +135,7 @@ Module.Formats = {
 			String = `function {Name}`
 		end
 
-		return `nil --[[{String}]]`
+		return `function() end --[[{String}]]`
 	end,
 	["table"] = function(self, Value, Data)
 		local Indent = Data.Indent or 0
@@ -254,7 +255,8 @@ function Module:FindStringIntSwap(Value: string)
 	if not Int then return end
 
 	--// Find a swap for the int value
-	return self:FindValueSwap(Int)
+	local Swap = self:FindValueSwap(Int)
+	return Swap
 end
 
 function Module:FindValueSwap(Value)

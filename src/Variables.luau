@@ -1,7 +1,7 @@
 --!nolint DeprecatedApi
 
 type VariableData = {
-	Name: string?,
+	Name: string,
 	Value: any,
 	Order: number,
 	Lookup: any?,
@@ -22,23 +22,57 @@ export type ClassDict = {
 	Variables: VariablesDict
 }
 
---// Variable pre-render functions 
-local RenderFuncs = {}
-local Globals = getfenv(1)
+type Module = {
+	VariablesDict: Table,
+	VariableLookup: Table,
+	InstanceQueue: Table,
+	NoNameCount: number,
+	VariableBase: string
+}
 
+--// Module
 local Module = {
 	VariableBase = "Jit"
 }
 Module.__index = Module
 
+local Globals = getfenv(1)
+
+--// Variable pre-render functions 
+local RenderFuncs = {
+	["Instance"] = function(self, Items: Table)
+		local Parser = self.Parser
+		local Formatter = self.Formatter
+
+		local AllParents = self:BulkCollectParents(Items)
+		local Duplicates = self:FindDuplicates(AllParents)
+
+		--// Make duplicates into variables
+		for _, Object: Instance in next, Duplicates do
+			local Path, ParentsCount = Parser:MakePathString({
+				Object = Object
+			})
+
+			--// Check the parent count to prevent single paths
+			if ParentsCount < 3 then continue end
+
+			local Name = Formatter:MakeName(Object)
+
+			--// Make variable
+			self:MakeVariable({
+				Lookup = Object,
+				Name = Name,
+				--Comment = "Compressed duplicate",
+				Value = Path
+			})
+		end
+	end,
+}
+
 local function MultiInsert(Table: Table, ToInsert: Table)
 	for _, Value in next, ToInsert do
 		table.insert(Table, Value)
 	end
-end
-
-local function AddRenderFunc(Name: string, Function: (self: Table, Items: Table) -> nil)
-	RenderFuncs[Name] = Function
 end
 
 function Module.new(Values)
@@ -88,7 +122,7 @@ function Module:GetClassDict(Class: string): ClassDict
 	return ClassDict
 end
 
-function Module:IsGlobal(Value: (string|Instance)): (boolean|string)
+function Module:IsGlobal(Value: (string|Instance)): (string|boolean)
 	local IndexFunc = self.IndexFunc
 
 	--// Check based on instance name
@@ -100,7 +134,7 @@ function Module:IsGlobal(Value: (string|Instance)): (boolean|string)
 	return Globals[Value] and Value or false
 end
 
-function Module:IsService(Object: Instance): (boolean|string)
+function Module:IsService(Object: Instance): (string|boolean)
 	local IndexFunc = self.IndexFunc
 	local ClassName = IndexFunc(Object, "ClassName")
 
@@ -114,16 +148,16 @@ end
 
 function Module:IncreaseNameUseCount(Name: string): number
 	if not Name then return 0 end
-	
+
 	local VariableNames = self.VariableNames	
 	local NameUseCount = VariableNames[Name]
-	
+
 	--// Create missing dict
 	if not NameUseCount then
 		NameUseCount = 0
 		VariableNames[Name] = NameUseCount
 	end
-	
+
 	VariableNames[Name] += 1
 
 	return NameUseCount
@@ -137,7 +171,7 @@ end
 function Module:CheckName(Data): string
 	local Name = Data.Name
 	local NameUseCount = self:IncreaseNameUseCount(Name)
-	
+
 	--// Check if the variable already has defined name
 	if Name then
 		if NameUseCount <= 0 then 
@@ -146,7 +180,7 @@ function Module:CheckName(Data): string
 			return `{Name}{NameUseCount}`
 		end
 	end
-	
+
 	--// Create a default variable name
 	local NoNameCount = self:IncreaseNoNameCount()
 
@@ -205,7 +239,7 @@ function Module:MakeVariable(Data: VariableData): string
 	self:AddVariableToClass(ClassDict, Data)
 
 	VariableLookup[Lookup] = Data
-	return Name :: string
+	return Name
 end
 
 function Module:CollectTableItems(Table: Table, Callback: (Value: any)->nil)
@@ -279,6 +313,7 @@ function Module:MakeParentsTable(Object: Instance, NoVariables: boolean?): Table
 	local IndexFunc = self.IndexFunc
 	local Swaps = self.Swaps
 	local Variables = self.Variables
+	NoVariables = self.NoVariables or NoVariables
 
 	local Parents = {}
 	local NextParent = Object :: Instance?
@@ -332,6 +367,10 @@ function Module:BulkCollectParents(Objects: Table): (Table, Table)
 end
 
 function Module:PrerenderVariables(Table: Table, Types: Table)	
+	--// Disable compression if NoVariables is enabled
+	if self.NoVariables then return end
+
+	--// Collect keys and values in table
 	local Collections = self:CollectTableTypes(Table, Types)
 
 	--// Instances
@@ -342,33 +381,5 @@ function Module:PrerenderVariables(Table: Table, Types: Table)
 		end
 	end
 end
-
-AddRenderFunc("Instance", function(self, Items: Table)
-	local Parser = self.Parser
-	local Formatter = self.Formatter
-
-	local AllParents, _ = self:BulkCollectParents(Items)
-	local Duplicates = self:FindDuplicates(AllParents)
-
-	--// Make duplicates into variables
-	for _, Object: Instance in next, Duplicates do
-		local Path, ParentsCount = Parser:MakePathString({
-			Object = Object
-		})
-
-		--// Check the parent count to prevent single paths
-		if ParentsCount < 3 then continue end
-		
-		local Name = Formatter:MakeName(Object)
-
-		--// Make variable
-		self:MakeVariable({
-			Lookup = Object,
-			Name = Name,
-			--Comment = "Compressed duplicate",
-			Value = Path
-		})
-	end
-end)
 
 return Module
