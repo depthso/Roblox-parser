@@ -121,7 +121,7 @@ function Module:MakeVariableCodeLines(ClassDict: table): string
 	return Lines
 end
 
-function Module:MakeVariableCode(Order: table): string
+function Module:MakeVariableCode(Order: table, NoComments: boolean?): string
 	local Variables = self.Variables
 	local ClassedVariables = Variables.VariablesDict
 
@@ -134,8 +134,8 @@ function Module:MakeVariableCode(Order: table): string
 
 		Index += 1
 
-		local NewLine = Index > 1 and "\n" or ""
-		Code ..= `{NewLine}-- {Class}\n`
+		Code ..= Index > 1 and "\n" or ""
+		Code ..= NoComments and "" or `-- {Class}\n`
 		Code ..= self:MakeVariableCodeLines(ClassDict)
 	end
 
