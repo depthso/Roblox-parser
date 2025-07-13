@@ -101,13 +101,13 @@ end end if l<h then q=','end k..=`{j}\t{r}{o}{q}\n`end k..=`{j}{not g and'}'or''
 c.Comment local g,h=`local {d} = {e}`,f and` -- {f}`or''return`{g}{h}`end
 function b:MakeVariableCodeLines(c)local d,e=self.Variables,c.Variables local f,
 g=d:OrderVariables(e),''for h,i in f do local j=self:MakeVariableCodeLine(i)g..=
-`{j}\n`end return g end function b:MakeVariableCode(c)local d=self.Variables
-local e,f,g=d.VariablesDict,'',0 for h,i in next,c do local j=false repeat local
-k=e[i]if not k then j=true break end g+=1 local l=g>1 and'\n'or''f..=`{l}-- {i}\n`
-f..=self:MakeVariableCodeLines(k)j=true until true if not j then break end end
-return f end function b:MakePathString(c)local d,e,f,g,h,i,j=self.Variables,self
-.Formatter,c.Object,c.Parents,self.NoVariables or c.NoVariables,'',0 g=g or d:
-MakeParentsTable(f,h)local k=function(k,l)local m=d:IsService(k)if not m then
+`{j}\n`end return g end function b:MakeVariableCode(c,d)local e=self.Variables
+local f,g,h=e.VariablesDict,'',0 for i,j in next,c do local k=false repeat local
+l=f[j]if not l then k=true break end h+=1 g..=h>1 and'\n'or''g..=d and''or`-- {j
+}\n`g..=self:MakeVariableCodeLines(l)k=true until true if not k then break end
+end return g end function b:MakePathString(c)local d,e,f,g,h,i,j=self.Variables,
+self.Formatter,c.Object,c.Parents,self.NoVariables or c.NoVariables,'',0 g=g or
+d:MakeParentsTable(f,h)local k=function(k,l)local m=d:IsService(k)if not m then
 return end local n=`game:GetService("{m}")`if h then i=n return true end local o
 =d:MakeVariable{Name=m,Class='Services',Value=n}i=o return true end for l,m in
 next,g do local n=false repeat local o,p=e:ObjectToString(m),d:GetVariable(m)if
